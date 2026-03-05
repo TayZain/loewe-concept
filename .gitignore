@@ -1,0 +1,9 @@
+node_modules
+.next
+.env
+.vscode
+.DS_Store
+.idea
+.cursor
+.agent
+.claude
