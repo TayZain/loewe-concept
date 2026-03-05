@@ -157,7 +157,7 @@ function CollageSection({ counter, showScrollHint }: { counter: string; showScro
   return (
     <section ref={sectionRef} className="h-screen w-screen flex items-center justify-center bg-white text-black relative overflow-hidden">
       <p className="absolute top-7 left-8 lg:left-14 text-xs tracking-widest">Founded 1846 (Espagne)</p>
-      <p className="absolute top-7 right-8 lg:right-14 text-xs tracking-widest">Gallery { counter}</p>
+      <p className="absolute top-7 right-8 lg:right-14 text-xs tracking-widest">Case Study { counter}</p>
 
       {/* ── Desktop: title + collage ─────────────────────────────────────── */}
       <div className="hidden lg:block">
