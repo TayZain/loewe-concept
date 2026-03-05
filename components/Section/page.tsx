@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence, useMotionValue, useSpring, useTransform, animate } from "motion/react";
 import Image from "next/image";
@@ -80,44 +80,23 @@ function CollageItem({ img, index, isLoaderComplete, shouldDisperse, springX, sp
 
   return (
     <motion.div
-      initial={{
-        opacity: 0,
-        scale: isLogo ? 0.95 : 1,
-        clipPath: isLogo ? "inset(100% 0% 0% 0%)" : "inset(0% 0% 0% 0%)",
-      }}
+      initial={{ opacity: 0, scale: isLogo ? 0.95 : 1, clipPath: isLogo ? "inset(100% 0% 0% 0%)" : "inset(0% 0% 0% 0%)" }}
       animate={
         isLoaderComplete
           ? isLogo
-            ? {
-              opacity: shouldDisperse ? 1 : 0,
-              scale: shouldDisperse ? 1 : 0.95,
-              clipPath: shouldDisperse ? "inset(0% 0% 0% 0%)" : "inset(100% 0% 0% 0%)",
-            }
+            ? { opacity: shouldDisperse ? 1 : 0, scale: shouldDisperse ? 1 : 0.95, clipPath: shouldDisperse ? "inset(0% 0% 0% 0%)" : "inset(100% 0% 0% 0%)" }
             : { opacity: 1 }
           : { opacity: 0 }
       }
       transition={
         isLogo
-          ? {
-            opacity:  { duration: 0.8, delay: 1.5, ease: "easeOut" },
-            scale:    { duration: 0.8, delay: 1.5, ease: [0.16, 1, 0.3, 1] },
-            clipPath: { duration: 1.2, delay: 1.5, ease: [0.25, 0.1, 0.25, 1] },
-          }
-          : {
-            opacity: { duration: 0.1, delay: index * 0.2, ease: "linear" },
-          }
+          ? { opacity: { duration: 0.9, delay: 0.7 }, scale: { duration: 0.9, delay: 0.7 }, clipPath: { duration: 1.2, delay: 0.7 } }
+          : { opacity: { duration: 0.1, delay: index * 0.2 } }
       }
       style={{
-        zIndex: z,
-        position: "absolute",
-        left: "50%",
-        top: "50%",
-        marginLeft: -width / 2,
-        marginTop: -height / 2,
-        width: `${width}px`,
-        height: `${height}px`,
-        x,
-        y,
+        zIndex: z, position: "absolute", left: "50%", top: "50%",
+        marginLeft: -width / 2, marginTop: -height / 2,
+        width: `${width}px`, height: `${height}px`, x, y,
       }}
       className="overflow-hidden"
     >
@@ -134,19 +113,13 @@ function CollageSection({ counter, showScrollHint }: { counter: string; showScro
   const { springX, springY } = useMouseSpring();
 
   useEffect(() => {
-    const onLoaderComplete = () => {
-      setIsLoaderComplete(true);
-      setTimeout(() => setShouldDisperse(true), 1500);
-    };
+    const onLoaderComplete = () => { setIsLoaderComplete(true); setTimeout(() => setShouldDisperse(true), 900); };
     window.addEventListener("loaderComplete", onLoaderComplete);
     return () => window.removeEventListener("loaderComplete", onLoaderComplete);
   }, []);
 
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => setIsSectionActive(entry.isIntersecting),
-      { threshold: 0.15 }
-    );
+    const observer = new IntersectionObserver(([entry]) => setIsSectionActive(entry.isIntersecting), { threshold: 0.15 });
     if (sectionRef.current) observer.observe(sectionRef.current);
     return () => observer.disconnect();
   }, []);
@@ -157,112 +130,64 @@ function CollageSection({ counter, showScrollHint }: { counter: string; showScro
   return (
     <section ref={sectionRef} className="h-screen w-screen flex items-center justify-center bg-white text-black relative overflow-hidden">
       <p className="absolute top-7 left-8 lg:left-14 text-xs tracking-widest">Founded 1846 (Espagne)</p>
-      <p className="absolute top-7 right-8 lg:right-14 text-xs tracking-widest">Case Study { counter}</p>
+      <p className="absolute top-7 right-8 lg:right-14 text-xs tracking-widest">Case Study {counter}</p>
 
       {/* ── Desktop: title + collage ─────────────────────────────────────── */}
       <div className="hidden lg:block">
         <div className="absolute z-50 flex items-center gap-16" style={{ left: "18%", top: "35%" }}>
           <motion.div
             initial={{ clipPath: "inset(100% 0% 0% 0%)" }}
-            animate={
-              !isSectionActive
-                ? { clipPath: "inset(0 0 100% 0)" }
-                : shouldDisperse
-                  ? { clipPath: "inset(0% 0% 0% 0%)" }
-                  : { clipPath: "inset(100% 0% 0% 0%)" }
-            }
-            transition={
-              !isSectionActive
-                ? { duration: 0.5, ease: [0.25, 0.1, 0.25, 1] }
-                : { duration: 1.2, delay: 2.1, ease: [0.25, 0.1, 0.25, 1] }
-            }
+            animate={!isSectionActive ? { clipPath: "inset(0 0 100% 0)" } : shouldDisperse ? { clipPath: "inset(0% 0% 0% 0%)" } : { clipPath: "inset(100% 0% 0% 0%)" }}
+            transition={!isSectionActive ? { duration: 0.5, ease: [0.25, 0.1, 0.25, 1] } : { duration: 1.2, delay: 1.4, ease: [0.25, 0.1, 0.25, 1] }}
           >
             <motion.h1
               className="text-8xl font-light leading-none tracking-tight"
               initial={{ filter: "blur(18px)", opacity: 0 }}
               animate={titleVisible ? { filter: "blur(0px)", opacity: 1 } : { filter: "blur(18px)", opacity: 0 }}
-              transition={
-                titleVisible
-                  ? { duration: 1.4, delay: 2.2, ease: [0.25, 0.1, 0.25, 1] }
-                  : { duration: 0.4, ease: "easeIn" }
-              }
+              transition={titleVisible ? { duration: 1.4, delay: 1.5, ease: [0.25, 0.1, 0.25, 1] } : { duration: 0.4 }}
             >
               THE<br />LOEWE<br />ARCHIVE
             </motion.h1>
           </motion.div>
-
-          <motion.p
-            className="text-lg max-w-xs"
-            initial={{ opacity: 0, y: 8 }}
+          <motion.p className="text-lg max-w-xs" initial={{ opacity: 0, y: 8 }}
             animate={titleVisible ? { opacity: 1, y: 0 } : { opacity: 0, y: 8 }}
-            transition={
-              titleVisible
-                ? { duration: 1, delay: 2.6, ease: [0.25, 0.1, 0.25, 1] }
-                : { duration: 0.35, ease: "easeIn" }
-            }
-          >
+            transition={titleVisible ? { duration: 1, delay: 2.0, ease: [0.25, 0.1, 0.25, 1] } : { duration: 0.35 }}>
             Unfolding the legacy.<br />One era at a time.
           </motion.p>
         </div>
-
-        <motion.div
-          className="relative w-200 h-150 -translate-x-24"
-          animate={{ opacity: isSectionActive ? 1 : 0 }}
-          transition={{ duration: 0.5, ease: "easeInOut" }}
-        >
+        <motion.div className="relative w-200 h-150 -translate-x-24"
+          animate={{ opacity: isSectionActive ? 1 : 0 }} transition={{ duration: 0.5 }}>
           {images.map((img, index) => (
-            <CollageItem
-              key={`${img.src}-${index}`}
-              img={img}
-              index={index}
-              isLoaderComplete={isLoaderComplete}
-              shouldDisperse={shouldDisperse}
-              springX={springX}
-              springY={springY}
-            />
+            <CollageItem key={`${img.src}-${index}`} img={img} index={index}
+              isLoaderComplete={isLoaderComplete} shouldDisperse={shouldDisperse}
+              springX={springX} springY={springY} />
           ))}
         </motion.div>
       </div>
 
       {/* ── Mobile: centered title + 3 images ───────────────────────────── */}
       <div className="lg:hidden flex flex-col items-center justify-center px-8 w-full text-center">
-        <motion.h1
-          className="text-5xl sm:text-6xl font-light leading-none tracking-tight mb-6"
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1, delay: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
-        >
+        <motion.h1 className="text-5xl sm:text-6xl font-light leading-none tracking-tight mb-6"
+          initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1, delay: 0.3, ease: [0.25, 0.1, 0.25, 1] }}>
           THE<br />LOEWE<br />ARCHIVE
         </motion.h1>
-
-        <motion.p
-          className="text-sm max-w-55 opacity-60 mb-10"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 0.6 }}
-          transition={{ duration: 0.8, delay: 0.6 }}
-        >
+        <motion.p className="text-sm max-w-55 opacity-60 mb-10" initial={{ opacity: 0 }}
+          animate={{ opacity: 0.6 }} transition={{ duration: 0.8, delay: 0.6 }}>
           Unfolding the legacy. One era at a time.
         </motion.p>
-
         <div className="flex gap-3">
           {mobileImages.map((img, i) => (
-            <motion.div
-              key={i}
-              className="relative overflow-hidden"
-              style={{ width: 90, height: 120 }}
-              initial={{ clipPath: "inset(100% 0 0 0)" }}
-              animate={{ clipPath: "inset(0% 0 0 0)" }}
-              transition={{ duration: 0.9, delay: 0.5 + i * 0.15, ease: [0.25, 0.1, 0.25, 1] }}
-            >
+            <motion.div key={i} className="relative overflow-hidden" style={{ width: 90, height: 120 }}
+              initial={{ clipPath: "inset(100% 0 0 0)" }} animate={{ clipPath: "inset(0% 0 0 0)" }}
+              transition={{ duration: 0.9, delay: 0.5 + i * 0.15, ease: [0.25, 0.1, 0.25, 1] }}>
               <Image src={img.src} alt="" fill className="object-cover" sizes="90px" />
             </motion.div>
           ))}
         </div>
       </div>
 
-      {showScrollHint && (
-        <p className="absolute bottom-7 left-8 lg:left-14 text-xs tracking-widest">Scroll to view more</p>
-      )}
+      {showScrollHint && <p className="absolute bottom-7 left-8 lg:left-14 text-xs tracking-widest">Scroll to view more</p>}
       <p className="absolute bottom-7 right-8 lg:right-14 text-xs tracking-widest">By Marvin SABIN</p>
     </section>
   );
@@ -272,7 +197,7 @@ export function Section1() {
   return <CollageSection counter="(01)" showScrollHint />;
 }
 
-// ─── SECTION 2–4 — Galerie éditoriale ───────────────────────────────────────
+// ─── SECTION 2–4 — Film strip gallery ───────────────────────────────────────
 
 type GalleryItem = {
   src: string;
@@ -280,156 +205,88 @@ type GalleryItem = {
   top: number;
   width: number;
   height: number;
-  label?: string[];
-  labelPosition?: "left" | "above" | "below";
-  expandable?: boolean;
+  label?: string;
   description?: string;
 };
 
-const LABEL = ["Blasy", "Winter (22)", "Collection"];
-
 const DESCRIPTIONS: Record<string, string> = {
   default: "The archive holds what time softens — a quiet gesture, a cloth cut against the light.",
-  second: "Form without apology. Each silhouette drawn from the tension between craft and concept.",
-  third: "Something older than fashion. A sensibility that refuses to be hurried.",
-  fourth: "In the hand of Jonathan Anderson, the past is never nostalgia — it is material.",
+  second:  "Form without apology. Each silhouette drawn from the tension between craft and concept.",
+  third:   "Something older than fashion. A sensibility that refuses to be hurried.",
+  fourth:  "In the hand of Jonathan Anderson, the past is never nostalgia — it is material.",
 };
 
-function GalleryLabel({ lines, visible, delay }: { lines: string[]; visible: boolean; delay: number }) {
-  return (
-    <motion.div
-      className="leading-snug overflow-hidden"
-      style={{ fontSize: 11 }}
-      initial={{ opacity: 0, y: 6 }}
-      animate={visible ? { opacity: 1, y: 0 } : { opacity: 0, y: -6 }}
-      transition={
-        visible
-          ? { duration: 0.8, delay, ease: [0.25, 0.1, 0.25, 1] }
-          : { duration: 0.4, delay: 0, ease: "easeIn" }
-      }
-    >
-      {lines.map((line, i) => <span key={i} className="block">{line}</span>)}
-    </motion.div>
-  );
-}
+// ─── EXPAND VIEW ─────────────────────────────────────────────────────────────
 
-// ─── DETAIL VIEW (Portal) ────────────────────────────────────────────────────
+type ExpandState = { item: GalleryItem; rect: DOMRect };
 
-type DetailViewProps = {
-  items: GalleryItem[];
-  initialIndex: number;
-  onClose: () => void;
-};
-
-function DetailView({ items, initialIndex, onClose }: DetailViewProps) {
-  const [index, setIndex] = useState(initialIndex);
-  const [direction, setDirection] = useState(1);
-  const item = items[index];
-
-  const goNext = () => {
-    setDirection(1);
-    setIndex((prev) => (prev + 1) % items.length);
-  };
+function ExpandView({ state, onClose }: { state: ExpandState; onClose: () => void }) {
+  const { item, rect } = state;
 
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-      if (e.key === "ArrowDown" || e.key === "ArrowRight") goNext();
-    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, []); // eslint-disable-line
-
-  const label = item.label ? item.label[0] : `Image ${index + 1}`;
-  const desc = item.description ?? DESCRIPTIONS.default;
-  const num = String(index + 1).padStart(2, "0");
+  }, [onClose]);
 
   const portal = (
-    <motion.div
-      className="fixed inset-0 z-9999 bg-white text-black flex flex-col"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.4, ease: "easeInOut" }}
-    >
-      {/* Header */}
-      <div className="flex items-start justify-between px-8 lg:px-14 pt-8">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={`header-${index}`}
-            initial={{ opacity: 0, y: 8, filter: "blur(8px)" }}
-            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-            exit={{ opacity: 0, y: -8, filter: "blur(8px)" }}
-            transition={{ duration: 0.45, ease: [0.25, 0.1, 0.25, 1] }}
-          >
-            <p className="text-xs tracking-widest mb-1 text-black">No.{num}</p>
-            <p className="text-sm tracking-widest uppercase text-black">{label}</p>
-          </motion.div>
-        </AnimatePresence>
+    <>
+      {/* Backdrop */}
+      <motion.div
+        className="fixed inset-0 bg-black z-9998"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 0.88 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.45, ease: "easeInOut" }}
+        onClick={onClose}
+      />
 
-        <button
+      {/* Image expanding from its original position */}
+      <motion.div
+        className="fixed z-9999 overflow-hidden"
+        initial={{ left: rect.left, top: rect.top, width: rect.width, height: rect.height }}
+        animate={{ left: 0, top: 0, width: "100vw", height: "100vh" }}
+        exit={{ left: rect.left, top: rect.top, width: rect.width, height: rect.height }}
+        transition={{ duration: 0.62, ease: [0.76, 0, 0.24, 1] }}
+      >
+        <Image src={item.src} alt={item.label ?? ""} fill className="object-contain" sizes="100vw" priority />
+
+        {/* Info overlay — fades in after expand */}
+        <motion.div
+          className="absolute inset-0 flex flex-col justify-between pointer-events-none"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.3, delay: 0.45 }}
+        >
+          {/* Top gradient + info */}
+          <div className="px-10 pt-10 lg:px-14 lg:pt-14 pb-20" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, transparent 100%)" }}>
+            {item.label && (
+              <p className="text-white text-sm tracking-widest uppercase mb-1">{item.label}</p>
+            )}
+            <p className="text-white text-xs tracking-widest opacity-50">@loewe</p>
+          </div>
+          {/* Bottom gradient + description */}
+          <div className="px-10 pb-10 lg:px-14 lg:pb-14 pt-20" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.55) 0%, transparent 100%)" }}>
+            <p className="text-white text-xs leading-relaxed opacity-70 max-w-xs">
+              {item.description ?? DESCRIPTIONS.default}
+            </p>
+          </div>
+        </motion.div>
+
+        {/* Close */}
+        <motion.button
+          className="absolute top-8 right-10 lg:right-14 text-white text-xs tracking-widest opacity-50 hover:opacity-100 transition-opacity pointer-events-auto cursor-pointer drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)]"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 0.5 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.3, delay: 0.45 }}
           onClick={onClose}
-          className="text-lg cursor-pointer leading-none tracking-widest text-black opacity-60 hover:opacity-100 transition-opacity"
-          style={{ fontWeight: 300 }}
         >
           Close
-        </button>
-      </div>
-
-      {/* Main image */}
-      <div className="flex-1 flex items-center justify-center px-6">
-        <AnimatePresence mode="wait" custom={direction}>
-          <motion.div
-            key={index}
-            custom={direction}
-            initial={{ opacity: 0, y: direction * 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: direction * -30 }}
-            transition={{ duration: 0.55, ease: [0.25, 0.1, 0.25, 1] }}
-            className="relative w-full max-w-115"
-            style={{ height: "clamp(240px, 50vh, 400px)" }}
-          >
-            <Image
-              src={item.src}
-              alt={label}
-              fill
-              className="object-cover"
-              sizes="(max-width: 768px) 90vw, 460px"
-            />
-          </motion.div>
-        </AnimatePresence>
-      </div>
-
-      {/* Footer */}
-      <div className="flex items-end justify-between px-8 lg:px-14 pb-10">
-        <div>
-          <button
-            onClick={goNext}
-            className="flex flex-col items-center gap-1 opacity-50 hover:opacity-100 transition-opacity"
-            aria-label="Next image"
-          >
-            <span className="text-xs tracking-widest">
-              {String(index + 2 > items.length ? 1 : index + 2).padStart(2, "0")} / {String(items.length).padStart(2, "0")}
-            </span>
-            <span className="text-xl leading-none" style={{ fontWeight: 200 }}>↓</span>
-          </button>
-        </div>
-
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={`footer-${index}`}
-            className="text-right max-w-50 lg:max-w-65"
-            initial={{ opacity: 0, y: 6, filter: "blur(8px)" }}
-            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-            exit={{ opacity: 0, y: -6, filter: "blur(8px)" }}
-            transition={{ duration: 0.45, ease: [0.25, 0.1, 0.25, 1] }}
-          >
-            <p className="text-xs tracking-widest mb-2 text-black opacity-40">@loewe</p>
-            <p className="text-xs leading-relaxed text-black opacity-70">{desc}</p>
-          </motion.div>
-        </AnimatePresence>
-      </div>
-    </motion.div>
+        </motion.button>
+      </motion.div>
+    </>
   );
 
   return createPortal(portal, document.body);
@@ -439,7 +296,7 @@ function DetailView({ items, initialIndex, onClose }: DetailViewProps) {
 
 function GallerySection({ items, counter }: { items: GalleryItem[]; counter: string }) {
   const [isVisible, setIsVisible] = useState(false);
-  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const [expandState, setExpandState] = useState<ExpandState | null>(null);
   const sectionRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -451,171 +308,120 @@ function GallerySection({ items, counter }: { items: GalleryItem[]; counter: str
     return () => observer.disconnect();
   }, []);
 
+  const handleClick = useCallback((item: GalleryItem, e: React.MouseEvent) => {
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    setExpandState({ item, rect });
+  }, []);
+
   return (
     <section ref={sectionRef} className="h-screen w-screen bg-white text-black relative overflow-hidden">
 
-      {/* ── Mobile: scrollable 2-col grid ─────────────────────────────────── */}
+      {/* ── Mobile: scrollable grid ───────────────────────────────────────── */}
       <div className="lg:hidden h-full overflow-y-auto">
         <p className="px-6 pt-8 pb-5 text-xs tracking-widest opacity-50">{counter}</p>
         <div className="grid grid-cols-2 gap-2 px-4 pb-10">
           {items.map((item, i) => (
-            <motion.div
-              key={i}
-              className="relative overflow-hidden cursor-pointer"
+            <motion.div key={i} className="relative overflow-hidden cursor-pointer"
               style={{ aspectRatio: `${item.width / item.height}` }}
-              onClick={() => setSelectedIndex(i)}
+              onClick={(e) => handleClick(item, e)}
               initial={{ opacity: 0, y: 20 }}
               animate={isVisible ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-              transition={{ duration: 0.7, delay: i * 0.07, ease: [0.25, 0.1, 0.25, 1] }}
-            >
-              <Image
-                src={item.src}
-                alt={`Gallery item ${i + 1}`}
-                fill
-                className="object-cover"
-                sizes="50vw"
-              />
-              {item.label && (
-                <p className="absolute bottom-2 left-2 text-[10px] tracking-widest text-white drop-shadow-sm">
-                  {item.label[0]}
-                </p>
-              )}
+              transition={{ duration: 0.7, delay: i * 0.07, ease: [0.25, 0.1, 0.25, 1] }}>
+              <Image src={item.src} alt={item.label ?? `Gallery item ${i + 1}`} fill className="object-cover" sizes="50vw" />
             </motion.div>
           ))}
         </div>
       </div>
 
-      {/* ── Desktop: absolute editorial layout ───────────────────────────── */}
+      {/* ── Desktop: film strip layout ────────────────────────────────────── */}
       <div className="hidden lg:block relative w-full h-full">
-        {items.map((item, i) => {
-          const delay = i * 0.12;
-
-          const img = (
-            <div
-              style={{ width: item.width, height: item.height, overflow: "hidden", cursor: "pointer" }}
-              onClick={() => setSelectedIndex(i)}
+        {items.map((item, i) => (
+          <motion.div
+            key={i}
+            className="absolute overflow-hidden group"
+            style={{ left: item.left, top: item.top, width: item.width, height: item.height, cursor: "crosshair" }}
+            initial={{ opacity: 0, scale: 1.05 }}
+            animate={isVisible ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 1.05 }}
+            transition={
+              isVisible
+                ? { duration: 1, delay: i * 0.08, ease: [0.25, 0.1, 0.25, 1] }
+                : { duration: 0.4, ease: "easeIn" }
+            }
+            onClick={(e) => handleClick(item, e)}
+          >
+            {/* Image with inner scale on hover */}
+            <motion.div
+              className="w-full h-full"
+              whileHover={{ scale: 1.04 }}
+              transition={{ duration: 0.6, ease: [0.25, 0.1, 0.25, 1] }}
             >
+              <Image
+                src={item.src}
+                alt={item.label ?? `Gallery item ${i + 1}`}
+                fill
+                className="object-cover"
+                sizes={`${item.width}px`}
+              />
+            </motion.div>
+
+            {/* Hover label */}
+            {item.label && (
               <motion.div
-                style={{ width: "100%", height: "100%" }}
-                initial={{ clipPath: "inset(100% 0 0 0)", scale: 1.08 }}
-                animate={
-                  isVisible
-                    ? { clipPath: "inset(0% 0 0 0)", scale: 1 }
-                    : { clipPath: "inset(0 0 100% 0)", scale: 1.05 }
-                }
-                transition={
-                  isVisible
-                    ? { duration: 1.1, delay, ease: [0.25, 0.1, 0.25, 1] }
-                    : { duration: 0.55, delay: 0, ease: [0.25, 0.1, 0.25, 1] }
-                }
+                className="absolute bottom-3 left-3 text-white text-[10px] tracking-widest opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                style={{ textShadow: "0 1px 4px rgba(0,0,0,0.5)" }}
               >
-                <Image
-                  src={item.src}
-                  alt={`Gallery item ${i + 1}`}
-                  width={item.width}
-                  height={item.height}
-                  className="object-cover w-full h-full"
-                  sizes={`${item.width}px`}
-                />
+                {item.label}
               </motion.div>
-            </div>
-          );
-
-          return (
-            <div key={i} className="absolute" style={{ left: item.left, top: item.top }}>
-              {item.labelPosition === "above" && item.label && (
-                <div className="mb-1.5">
-                  <GalleryLabel lines={item.label} visible={isVisible} delay={delay + 0.2} />
-                </div>
-              )}
-
-              <div className={item.labelPosition === "left" ? "flex items-start gap-3" : "flex flex-col"}>
-                {item.labelPosition === "left" && item.label && (
-                  <div className="text-right pt-0.5">
-                    <GalleryLabel lines={item.label} visible={isVisible} delay={delay + 0.2} />
-                  </div>
-                )}
-                <div className="flex flex-col gap-1.5">
-                  {img}
-                  {item.expandable && (
-                    <motion.span
-                      style={{ fontSize: 11 }}
-                      className="cursor-pointer opacity-60 hover:opacity-100 transition-opacity"
-                      initial={{ opacity: 0 }}
-                      animate={isVisible ? { opacity: 0.6 } : {}}
-                      transition={{ duration: 0.6, delay: delay + 0.4 }}
-                      onClick={() => setSelectedIndex(i)}
-                    >
-                      (Expand)
-                    </motion.span>
-                  )}
-                  {item.labelPosition === "below" && item.label && (
-                    <div className="mt-1">
-                      <GalleryLabel lines={item.label} visible={isVisible} delay={delay + 0.2} />
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          );
-        })}
+            )}
+          </motion.div>
+        ))}
 
         <motion.p
           className="absolute bottom-7 right-14 text-xs tracking-widest"
           initial={{ opacity: 0 }}
           animate={{ opacity: isVisible ? 1 : 0 }}
-          transition={{ duration: 0.6, delay: isVisible ? 0.8 : 0 }}
+          transition={{ duration: 0.6, delay: isVisible ? 0.6 : 0 }}
         >
           {counter}
         </motion.p>
       </div>
 
       <AnimatePresence>
-        {selectedIndex !== null && (
-          <DetailView
-            items={items}
-            initialIndex={selectedIndex}
-            onClose={() => setSelectedIndex(null)}
-          />
+        {expandState && (
+          <ExpandView state={expandState} onClose={() => setExpandState(null)} />
         )}
       </AnimatePresence>
     </section>
   );
 }
 
-// ─── DATA ────────────────────────────────────────────────────────────────────
+// ─── DATA — film strip positions (spacious, cinematic) ───────────────────────
 
-// Section 2 — images exclusives : img-1, img-5, img-10, img-hero-2, img-3, img-13, inspi-1
+// Section 2 — (01/03)
 const section2Items: GalleryItem[] = [
-  { src: "/images/img-1.jpg",      left:  60, top:  40, width: 140, height: 175, label: LABEL, labelPosition: "left",  description: DESCRIPTIONS.default },
-  { src: "/images/img-5.jpg",      left: 460, top:  40, width: 265, height: 175, expandable: true,                     description: DESCRIPTIONS.second },
-  { src: "/images/img-10.jpeg",    left: 1130, top:  40, width: 130, height: 205, label: LABEL, labelPosition: "left", description: DESCRIPTIONS.third },
-  { src: "/images/img-hero-2.jpg", left:  60, top: 430, width: 305, height: 175, label: LABEL, labelPosition: "above", description: DESCRIPTIONS.fourth },
-  { src: "/images/img-3.jpg",      left: 840, top: 415, width: 130, height: 155, expandable: true,                     description: DESCRIPTIONS.default },
-  { src: "/images/img-13.jpeg",    left: 595, top: 665, width: 265, height: 240, label: LABEL, labelPosition: "left",  description: DESCRIPTIONS.second },
-  { src: "/images/inspi-1.jpeg",   left: 1040, top: 670, width: 130, height: 100, label: LABEL, labelPosition: "left", description: DESCRIPTIONS.third },
+  { src: "/images/img-1.jpg",      left:  60, top:  80, width: 340, height: 500, label: "Archive I",    description: DESCRIPTIONS.default },
+  { src: "/images/img-5.jpg",      left: 480, top:  60, width: 440, height: 280, label: "Winter 22",    description: DESCRIPTIONS.second },
+  { src: "/images/img-10.jpeg",    left: 480, top: 400, width: 220, height: 320, label: "Collection",   description: DESCRIPTIONS.third },
+  { src: "/images/img-hero-2.jpg", left: 800, top: 200, width: 500, height: 360, label: "Dispatch",     description: DESCRIPTIONS.fourth },
+  { src: "/images/img-3.jpg",      left: 1330, top: 90, width: 160, height: 240, label: "Blasy",        description: DESCRIPTIONS.default },
 ];
 
-// Section 4 (affiché en Section3, 02/03) — images exclusives : img-8, img-14, img-2, img-section-1, img-6, img-hero-1, video-2
+// Section 3 (used by Section3 export, 02/03)
 const section4Items: GalleryItem[] = [
-  { src: "/images/img-8.jpeg",        left:  60, top:  40, width: 140, height: 175, label: LABEL, labelPosition: "left",  description: DESCRIPTIONS.third },
-  { src: "/images/img-14.jpeg",       left: 460, top:  40, width: 265, height: 175, expandable: true,                     description: DESCRIPTIONS.fourth },
-  { src: "/images/img-2.jpg",         left: 1130, top:  40, width: 130, height: 205, label: LABEL, labelPosition: "left", description: DESCRIPTIONS.default },
-  { src: "/images/img-section-1.jpg", left:  60, top: 430, width: 305, height: 175, label: LABEL, labelPosition: "above", description: DESCRIPTIONS.second },
-  { src: "/images/img-6.png",         left: 840, top: 415, width: 130, height: 155, expandable: true,                     description: DESCRIPTIONS.third },
-  { src: "/images/img-hero-1.jpg",    left: 595, top: 665, width: 265, height: 240, label: LABEL, labelPosition: "left",  description: DESCRIPTIONS.fourth },
-  { src: "/images/video-2.gif",       left: 1040, top: 670, width: 130, height: 100, label: LABEL, labelPosition: "left", description: DESCRIPTIONS.default },
+  { src: "/images/img-8.jpeg",        left:  80, top: 120, width: 280, height: 420, label: "Archive II",   description: DESCRIPTIONS.third },
+  { src: "/images/img-14.jpeg",       left: 450, top:  60, width: 520, height: 320, label: "Editorial",    description: DESCRIPTIONS.fourth },
+  { src: "/images/img-2.jpg",         left: 450, top: 440, width: 240, height: 340, label: "Craft",        description: DESCRIPTIONS.default },
+  { src: "/images/img-section-1.jpg", left: 1020, top: 180, width: 360, height: 500, label: "Heritage",   description: DESCRIPTIONS.second },
+  { src: "/images/video-2.gif",       left: 1270, top:  70, width: 160, height: 130, label: "Motion",     description: DESCRIPTIONS.third },
 ];
 
-// Section 3 (affiché en Section4, 03/03) — images exclusives : img-12, img-9, img-4, img-11, img-hero-2, img-5, img-13
+// Section 4 (used by Section4 export, 03/03)
 const section3Items: GalleryItem[] = [
-  { src: "/images/img-9.jpeg",     left: 460, top:  30, width: 285, height: 175, expandable: true,                      description: DESCRIPTIONS.second },
-  { src: "/images/img-12.jpeg",    left: 115, top: 240, width: 215, height: 165, label: LABEL, labelPosition: "below",  description: DESCRIPTIONS.fourth },
-  { src: "/images/img-4.webp",     left: 800, top: 250, width: 200, height: 240, expandable: true,                      description: DESCRIPTIONS.third },
-  { src: "/images/img-11.jpeg",    left: 1270, top: 295, width: 130, height: 165, label: LABEL, labelPosition: "above", description: DESCRIPTIONS.default },
-  { src: "/images/img-hero-2.jpg", left: 1270, top: 475, width: 130, height: 105,                                        description: DESCRIPTIONS.second },
-  { src: "/images/img-5.jpg",      left: 220, top: 655, width: 140, height: 175, label: LABEL, labelPosition: "left",   description: DESCRIPTIONS.third },
-  { src: "/images/img-13.jpeg",    left: 900, top: 645, width: 260, height: 230, label: LABEL, labelPosition: "left",   description: DESCRIPTIONS.fourth },
+  { src: "/images/img-9.jpeg",     left:  60, top:  60, width: 480, height: 340, label: "Chapter III",  description: DESCRIPTIONS.second },
+  { src: "/images/img-12.jpeg",    left:  80, top: 460, width: 260, height: 380, label: "Silhouette",   description: DESCRIPTIONS.fourth },
+  { src: "/images/img-4.webp",     left: 620, top: 130, width: 340, height: 500, label: "Form",         description: DESCRIPTIONS.third },
+  { src: "/images/img-11.jpeg",    left: 1040, top:  80, width: 380, height: 260, label: "Legacy",      description: DESCRIPTIONS.default },
+  { src: "/images/img-5.jpg",      left: 1060, top: 410, width: 240, height: 360, label: "Memory",      description: DESCRIPTIONS.second },
 ];
 
 export function Section2() {
